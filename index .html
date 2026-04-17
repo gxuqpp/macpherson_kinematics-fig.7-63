@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>图7-63 麦弗逊式独立悬架运动特性</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;background:#1c2540;color:#e8edf5;min-height:100vh;font-size:18px}
+
+header{
+  background:linear-gradient(135deg,#0f1a30 0%,#1a2744 100%);
+  color:#fff;padding:22px 28px;
+  border-bottom:5px solid #c0392b;
+}
+header h1{font-size:1.5em;font-weight:700;margin-bottom:6px;line-height:1.3}
+header p{font-size:1.0em;color:#b0ccdf;line-height:1.6}
+
+.wrap{max-width:1440px;margin:0 auto;padding:18px 16px}
+
+.card{background:#253154;border-radius:10px;box-shadow:0 3px 14px rgba(0,0,0,.35);padding:20px 22px;margin-bottom:18px}
+
+/* ── 参数栏 ── */
+.param-row{display:flex;flex-wrap:wrap;gap:22px;align-items:center}
+.param{display:flex;flex-direction:column;gap:4px}
+.param .lbl{font-size:.85em;color:#8aadcc}
+.param .val{font-size:1.1em;font-weight:700;color:#a8d4f5}
+
+/* ── 图例 ── */
+.legend-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.leg-btn{
+  display:flex;align-items:center;gap:9px;padding:9px 16px;
+  border-radius:22px;cursor:pointer;border:2px solid #3a5080;
+  background:#1c3060;font-size:1.0em;transition:all .18s;
+  user-select:none;color:#e0eaf5;
+}
+.leg-btn.active{background:#1e3a70;border-color:#6090c0;box-shadow:0 1px 8px rgba(0,0,0,.3)}
+.leg-btn.off{opacity:.32}
+.badge{font-size:.75em;background:#c0392b;color:#fff;padding:3px 8px;border-radius:4px;font-weight:700}
+
+/* ── 图表网格 ── */
+.charts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1100px){.charts-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px) {.charts-grid{grid-template-columns:1fr}}
+.chart-wrap h3{font-size:1.0em;color:#b8d4ee;margin-bottom:8px;text-align:center;font-weight:700}
+.chart-wrap svg{width:100%;height:auto;display:block}
+
+/* ── 操作按钮 ── */
+.controls{display:flex;gap:10px;flex-wrap:wrap}
+.btn{
+  background:rgba(200,130,40,.12);border:1.5px solid rgba(200,130,40,.35);
+  color:#e0a050;padding:10px 22px;border-radius:6px;cursor:pointer;
+  font-size:1.0em;font-family:inherit;transition:all .18s;
+}
+.btn:hover{background:rgba(200,130,40,.26);border-color:rgba(200,130,40,.6)}
+
+/* ── 分析卡片 ── */
+.analysis-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1100px){.analysis-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:500px) {.analysis-grid{grid-template-columns:1fr}}
+.acard{border-left:5px solid #3a7bd5;padding-left:16px}
+.acard h4{font-size:1.0em;margin-bottom:8px;font-weight:700;color:#c8dff5}
+.acard p{font-size:.92em;color:#b0c8e0;line-height:1.85}
+
+/* ── 数据表 ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:1.0em;margin-top:12px;min-width:580px}
+table th{background:#0f1f40;color:#a8ccee;padding:11px 12px;text-align:center;font-weight:700}
+table td{padding:10px 12px;text-align:center;border-bottom:1px solid #2a3a58;color:#d0e0f0}
+table tr:nth-child(even) td{background:#1e2e50}
+table tr.hl td{background:#2a3a20;font-weight:700;color:#ffe066}
+.star{color:#f5a623}
+
+footer{text-align:center;padding:16px;font-size:.9em;color:#7090b0}
+user-select: none
+</style>
+</head>
+<body>
+
+<header>
+  <h1>图 7-63 &nbsp; 麦弗逊式独立悬架运动特性</h1>
+  <p>参考：闵海涛《汽车设计》第6版 §7.5 &nbsp;|&nbsp;
+     下横臂长度 l₁ 变化对悬架运动特性的影响分析（Z — β、Z — α、Z — γ、Z — Bᵧ）</p>
+</header>
+
+<div class="wrap">
+
+<!-- ① 参数 -->
+<div class="card">
+  <div class="param-row" id="param-row"></div>
+</div>
+
+<!-- ② 图例 -->
+<div class="card">
+  <div style="font-size:.95em;color:#8aadcc;margin-bottom:12px">点击可切换显示 / 隐藏对应曲线：</div>
+  <div class="legend-row" id="legend"></div>
+</div>
+
+<!-- ③ 图表 -->
+<div class="card">
+  <div class="charts-grid">
+    <div class="chart-wrap">
+      <h3>① 主销内倾角（Z — β）</h3>
+      <svg id="svg-beta"  viewBox="0 0 340 470"></svg>
+    </div>
+    <div class="chart-wrap">
+      <h3>② 车轮外倾角（Z — α）</h3>
+      <svg id="svg-alpha" viewBox="0 0 340 470"></svg>
+    </div>
+    <div class="chart-wrap">
+      <h3>③ 主销后倾角（Z — γ）</h3>
+      <svg id="svg-gamma" viewBox="0 0 340 470"></svg>
+    </div>
+    <div class="chart-wrap">
+      <h3>④ 半轮距（Z — Bᵧ）</h3>
+      <svg id="svg-by"    viewBox="0 0 340 470"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- ④ 操作 -->
+<div class="card">
+  <div class="controls">
+    <button class="btn" id="btnAll">显示全部曲线</button>
+    <button class="btn" id="btnRef">仅参考曲线（3-3）</button>
+    <button class="btn" id="btnReset">重置</button>
+  </div>
+</div>
+
+<!-- ⑤ 分析 -->
+<div class="card">
+  <div class="analysis-grid">
+    <div class="acard">
+      <h4>📐 β &nbsp;主销内倾角</h4>
+      <p>
+        下横臂越短（曲线 1-1），悬架跳动时主销内倾角变化幅度越大；
+        臂越长（曲线 5-5）曲线越平缓。设计时需兼顾回正力矩与轮胎磨损。
+      </p>
+    </div>
+    <div class="acard" style="border-left-color:#27ae60">
+      <h4>↗ α &nbsp;车轮外倾角</h4>
+      <p>
+        压缩时产生负外倾，有利于弯道稳定性。
+        下横臂越短，外倾变化越剧烈，
+        过度负外倾会导致轮胎内侧异常磨损。
+      </p>
+    </div>
+    <div class="acard" style="border-left-color:#e67e22">
+      <h4>↪ γ &nbsp;主销后倾角</h4>
+      <p>
+        后倾角曲线上下两段均呈向右弯曲趋势（正曲率）。
+        压缩时（上半）臂越短（1-1）γ越大，从左到右排列为 5、3、1；
+        回弹时（下半）排列为 1、3、5。图中仅示 1、3、5 三条代表性曲线。
+      </p>
+    </div>
+    <div class="acard" style="border-left-color:#9b59b6">
+      <h4>↔ Bᵧ &nbsp;半轮距</h4>
+      <p>
+        跳动引起轮距变化是轮胎磨损的重要因素。
+        下横臂越短，轮距变化越大。
+        曲线 3-3（参考）为常用设计折中方案。
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ⑥ 数据表 -->
+<div class="card">
+  <div style="font-weight:700;margin-bottom:8px;font-size:1.05em;color:#b8d4ee">
+    各臂长在 ±100 mm 跳动范围内的参数变化量（峰-峰值）
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>曲线</th>
+          <th>l₁ (m)</th>
+          <th>Δβ (°)</th>
+          <th>Δα (°)</th>
+          <th>Δγ (°)</th>
+          <th>ΔBᵧ (cm)</th>
+          <th>综合评价</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- .wrap -->
+
+<footer>基于《汽车设计》第6版（闵海涛主编）图7-63 · 麦弗逊式独立悬架运动学解析模型</footer>
+
+<script>
+// ============================================================
+//  运动学模型  Kinematics model (polynomial approximation)
+//
+//  sc     = ARM_REF / l1  臂越短 sc 越大（曲线 1 最大）
+//  sc_inv = l1 / ARM_REF  臂越长 sc_inv 越大（曲线 5 最大）
+//
+//  各图正确趋势（括号内为 Z=+100 处各曲线的左→右排列顺序）：
+//  ① β：上半 1<2<3<4<5，下半 5<4<3<2<1 → X 型交叉，用 sc_inv
+//  ② α：上下两半均 5<4<3<2<1（扇形，无交叉），用 sc_inv 且系数恒正
+//  ③ γ：上下两半均 5<4<3<2<1（扇形），差异微小，用 z² 曲率区分
+//  ④ Bᵧ：上下两半均 1<2<3<4<5（两侧均向左，用 sc·z²）
+// ============================================================
+const ARM_LENGTHS = [0.262, 0.312, 0.362, 0.412, 0.462];
+const ARM_LABELS  = ['1–1','2–2','3–3','4–4','5–5'];
+const ARM_REF     = 0.362;  // 参考臂长（曲线 3-3）
+
+// 暖橙色系，与原图一致，参考曲线加粗
+const COLORS  = ['#ff6818','#e89010','#c8a020','#98b830','#58c860'];
+const LWIDTHS = [1.8, 1.8, 3.2, 1.8, 1.8];
+
+function kinematics(l1, Z) {
+  const sc     = ARM_REF / l1;   // 短臂大（曲线1最大≈1.38，曲线5最小≈0.78）
+  const sc_inv = l1 / ARM_REF;   // 长臂大（曲线5最大≈1.28，曲线1最小≈0.72）
+  const z      = Z / 100.0;      // 归一化 [-1, 1]
+
+  return {
+    // ① 主销内倾角 β — X型交叉
+    //    压缩(z>0)：1最左→5最右；回弹(z<0)：5最左→1最右
+    //    修正：原式用sc（臂越短变化越大），应改为sc_inv（臂越长变化越大）
+    beta:  14.0 + sc_inv * (1.70*z - 0.50*z*z),
+
+    // ② 车轮外倾角 α — X型交叉，与β左右镜像
+    //    关键：乘以 sc_inv 的部分不含常数项，保证所有曲线在 Z=0 处汇于 α≈0
+    //    与β公式: 14 + sc_inv*(1.70z - 0.50z²) 对称，符号取反，基准取0°
+    //    Z=0 时 α=0（所有曲线相交于横坐标靠近0处）
+    alpha: 0.0 - sc_inv * (1.70*z - 0.50*z*z),
+
+    // ③ 主销后倾角 γ — X型交叉 + 向右弯趋势，只显示 1、3、5 三条曲线
+    //    公式：3.50 + sc*(0.35z + 0.15z²)
+    //    线性项 sc*0.35z（z>0时曲线1最右；z<0时曲线1最左）→ X型交叉
+    //    二次项 sc*0.15z²（系数恒正）→ 上下两段均向右弯曲
+    //    Z=+100：γ₁=4.19 > γ₃=4.00 > γ₅=3.89  上半左→右：5,3,1 ✓
+    //    Z=−100：γ₁=3.22 < γ₃=3.30 < γ₅=3.34  下半左→右：1,3,5 ✓
+    gamma: 3.50 + sc * (0.35*z + 0.15*z*z),
+
+    // ④ 半轮距 Bᵧ — 两侧均向左（Bᵧ随|Z|增大而减小）
+    //    用 sc·z²：短臂(sc大)→减幅最大→曲线1始终最左
+    //    对称抛物线确保上下两半趋势相同（均向左）
+    by:    73.0 - sc * 1.5 * z * z,
+  };
+}
+
+const Z_MIN=-100, Z_MAX=100, N_PTS=201;
+const zArr = Array.from({length:N_PTS}, (_,i) => Z_MIN + (Z_MAX-Z_MIN)*i/(N_PTS-1));
+
+// 预计算所有曲线数据
+const allCurves = ARM_LENGTHS.map(l1 => ({
+  l1,
+  pts: zArr.map(Z => ({ Z, ...kinematics(l1, Z) }))
+}));
+
+let vis = ARM_LENGTHS.map(() => true);
+
+// ============================================================
+//  图表配置（x轴范围已按新公式重新核定）
+// ============================================================
+const PLOTS = [
+  { svgId:'svg-beta',  key:'beta',  xLabel:'β / (°)',
+    xMin:10.5, xMax:16.0, ticks:[11,12,13,14,15] },
+  { svgId:'svg-alpha', key:'alpha', xLabel:'α / (°)',
+    xMin:-2.0, xMax: 3.5, ticks:[-1,0,1,2,3] },
+  { svgId:'svg-gamma', key:'gamma', xLabel:'γ / (°)',
+    xMin: 2.9, xMax: 4.5, ticks:[3.0,3.5,4.0],
+    curves:[0,2,4] },  // 只显示曲线 1、3、5
+  { svgId:'svg-by',    key:'by',    xLabel:'Bᵧ / cm',
+    xMin:70.0, xMax:73.5, ticks:[71,72,73] },
+];
+
+// ============================================================
+//  SVG 绘图
+// ============================================================
+const NS = 'http://www.w3.org/2000/svg';
+const VB = {w:340, h:470};
+const M  = {t:40, r:18, b:64, l:60};
+const CW = VB.w - M.l - M.r;   // 262 px
+const CH = VB.h - M.t - M.b;   // 366 px
+
+function E(tag, attrs, txt) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  if (txt !== undefined) e.textContent = txt;
+  return e;
+}
+
+function sx(val, p) {
+  return M.l + CW * (val - p.xMin) / (p.xMax - p.xMin);
+}
+function sz(Z) {
+  return M.t + CH * (1 - (Z - Z_MIN) / (Z_MAX - Z_MIN));
+}
+
+function drawChart(p) {
+  const svg = document.getElementById(p.svgId);
+  svg.innerHTML = '';
+
+  // ── 背景
+  svg.appendChild(E('rect',{x:0,y:0,width:VB.w,height:VB.h,fill:'#1a2844'}));
+  svg.appendChild(E('rect',{x:M.l,y:M.t,width:CW,height:CH,
+    fill:'#1e3060',stroke:'#3a5080','stroke-width':1.2}));
+
+  // ── Z 轴网格线
+  for (let z=Z_MIN; z<=Z_MAX+0.1; z+=20) {
+    const y=sz(z), iz=(z===0);
+    svg.appendChild(E('line',{
+      x1:M.l,y1:y,x2:M.l+CW,y2:y,
+      stroke:iz?'#8099bb':'#2a3f60',
+      'stroke-width':iz?1.5:0.9,
+      'stroke-dasharray':iz?'6,3':''
+    }));
+    svg.appendChild(E('text',{
+      x:M.l-7,y:y+4.5,
+      'text-anchor':'end','font-size':'14',
+      fill:'#8ab0d8','font-weight':iz?'700':'400'
+    }, String(z)));
+  }
+
+  // ── X 轴刻度线与标注
+  p.ticks.forEach(tv => {
+    const x=sx(tv,p);
+    if (x<M.l-1||x>M.l+CW+1) return;
+    svg.appendChild(E('line',{
+      x1:x,y1:M.t,x2:x,y2:M.t+CH,
+      stroke:'#2a3f60','stroke-width':0.9
+    }));
+    const lbl = Number.isInteger(tv) ? String(tv) : tv.toFixed(1);
+    svg.appendChild(E('text',{
+      x:x,y:M.t+CH+18,
+      'text-anchor':'middle','font-size':'13',fill:'#8ab0d8'
+    }, lbl));
+  });
+
+  // ── 曲线（逆序使 1-1 在最上层）
+  const ciAll = p.curves ? p.curves : ARM_LENGTHS.map((_,i)=>i);
+  const ciDraw = ciAll.slice().reverse();
+  for (const ci of ciDraw) {
+    if (!vis[ci]) continue;
+    const pts = allCurves[ci].pts;
+    let d='';
+    pts.forEach((pt,i) => {
+      const x=sx(pt[p.key],p), y=sz(pt.Z);
+      d += (i===0?'M':'L') + x.toFixed(2) + ',' + y.toFixed(2);
+    });
+    svg.appendChild(E('path',{
+      d, fill:'none', stroke:COLORS[ci],
+      'stroke-width':LWIDTHS[ci],
+      'stroke-linejoin':'round','stroke-linecap':'round'
+    }));
+  }
+
+  // ── 端点曲线编号标注（顶部 Z_MAX，底部 Z_MIN）
+  [Z_MAX, Z_MIN].forEach(Zend => {
+    const isTop = (Zend === Z_MAX);
+
+    // 按 x 坐标排序（从小到大 = 从左到右）
+    const items = ciAll.map(ci => ({
+      ci,
+      xpx: sx(kinematics(ARM_LENGTHS[ci], Zend)[p.key], p)
+    })).filter(({ci}) => vis[ci]).sort((a,b) => a.xpx - b.xpx);
+
+    items.forEach(({ci, xpx}, rank) => {
+      const lx = Math.max(M.l+7, Math.min(M.l+CW-7, xpx));
+      // 顶部标注：交替 y 偏移以减少重叠
+      const dy = (items.length >= 4 && isTop) ? (rank % 2) * (-11) : 0;
+      const y  = isTop ? M.t - 5 + dy : M.t + CH + 16;
+      svg.appendChild(E('text',{
+        x:lx, y:y,
+        'text-anchor':'middle','font-size':'12','font-weight':'bold',
+        fill:COLORS[ci]
+      }, String(ci+1)));
+    });
+  });
+
+  // ── 坐标轴框架
+  svg.appendChild(E('line',{x1:M.l,y1:M.t,x2:M.l,y2:M.t+CH,stroke:'#88aacc','stroke-width':1.8}));
+  svg.appendChild(E('line',{x1:M.l,y1:M.t+CH,x2:M.l+CW,y2:M.t+CH,stroke:'#88aacc','stroke-width':1.8}));
+
+  // ── Y 轴标注
+  const cy = M.t + CH/2;
+  svg.appendChild(E('text',{
+    x:13, y:cy, 'text-anchor':'middle',
+    'font-size':'15','font-weight':'700',fill:'#a8c8e8',
+    transform:`rotate(-90,13,${cy})`
+  }, 'Z / mm'));
+
+  // ── X 轴标注
+  svg.appendChild(E('text',{
+    x:M.l+CW/2, y:VB.h-8,
+    'text-anchor':'middle','font-size':'15','font-weight':'700',fill:'#a8c8e8'
+  }, p.xLabel));
+}
+
+function redraw() { PLOTS.forEach(p => drawChart(p)); }
+
+// ============================================================
+//  图例
+// ============================================================
+function buildLegend() {
+  const ctr = document.getElementById('legend');
+  ctr.innerHTML = '';
+  ARM_LENGTHS.forEach((l1,i) => {
+    const btn = document.createElement('div');
+    btn.className = 'leg-btn active';
+    btn.innerHTML = `
+      <svg width="36" height="${LWIDTHS[i]*2+8}" style="flex-shrink:0">
+        <line x1="2"  y1="${(LWIDTHS[i]*2+8)/2}"
+              x2="34" y2="${(LWIDTHS[i]*2+8)/2}"
+              stroke="${COLORS[i]}" stroke-width="${LWIDTHS[i]}"
+              stroke-linecap="round"/>
+      </svg>
+      <span>${ARM_LABELS[i]} &nbsp; l₁ = ${l1.toFixed(3)} m</span>
+      ${i===2 ? '<span class="badge">参考</span>' : ''}
+    `;
+    btn.addEventListener('click', () => {
+      vis[i] = !vis[i];
+      btn.classList.toggle('active', vis[i]);
+      btn.classList.toggle('off',   !vis[i]);
+      redraw();
+    });
+    ctr.appendChild(btn);
+  });
+}
+
+// ============================================================
+//  参数显示
+// ============================================================
+function buildParams() {
+  const items = [
+    ['下横臂长度范围', '0.262 ~ 0.462 m'],
+    ['参考臂长 l₁(3-3)', '0.362 m'],
+    ['车轮跳动范围', '±100 mm'],
+    ['外倾角基准 α₀', '0°（Z=0 汇交）'],
+    ['主销内倾角基准 β₀', '14°'],
+    ['主销后倾角基准 γ₀', '3.5°'],
+    ['参考半轮距 Bᵧ₀', '73.0 cm'],
+  ];
+  const row = document.getElementById('param-row');
+  items.forEach(([l,v]) => {
+    const d = document.createElement('div');
+    d.className = 'param';
+    d.innerHTML = `<span class="lbl">${l}</span><span class="val">${v}</span>`;
+    row.appendChild(d);
+  });
+}
+
+// ============================================================
+//  数据表
+// ============================================================
+function evalScore(dVal) {
+  if (dVal < 1.5) return '<span class="star">★★★</span> 优秀';
+  if (dVal < 3.0) return '<span class="star">★★</span> 良好';
+  if (dVal < 5.0) return '<span class="star">★</span> 一般';
+  return '偏大';
+}
+
+function buildTable() {
+  const tbody = document.getElementById('tbl-body');
+  ARM_LENGTHS.forEach((l1, i) => {
+    const vals = allCurves[i].pts;
+    const rng = key => (Math.max(...vals.map(p=>p[key])) - Math.min(...vals.map(p=>p[key]))).toFixed(2);
+    const dBeta  = parseFloat(rng('beta'));
+    const dAlpha = parseFloat(rng('alpha'));
+    const dGamma = parseFloat(rng('gamma'));
+    const dBy    = parseFloat(rng('by'));
+    const score  = (dBeta + dAlpha) / 2;
+    const tr = document.createElement('tr');
+    if (i===2) tr.classList.add('hl');
+    tr.innerHTML = `
+      <td style="color:${COLORS[i]};font-weight:700">${ARM_LABELS[i]}</td>
+      <td>${l1.toFixed(3)}</td>
+      <td>${dBeta.toFixed(2)}</td>
+      <td>${dAlpha.toFixed(2)}</td>
+      <td>${dGamma.toFixed(2)}</td>
+      <td>${dBy.toFixed(2)}</td>
+      <td style="text-align:left">${evalScore(score)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ============================================================
+//  按钮操作
+// ============================================================
+document.getElementById('btnAll').addEventListener('click', () => {
+  vis.fill(true);
+  document.querySelectorAll('.leg-btn').forEach(b => {
+    b.classList.add('active'); b.classList.remove('off');
+  });
+  redraw();
+});
+document.getElementById('btnRef').addEventListener('click', () => {
+  vis.fill(false); vis[2] = true;
+  document.querySelectorAll('.leg-btn').forEach((b,i) => {
+    b.classList.toggle('active', i===2);
+    b.classList.toggle('off',   i!==2);
+  });
+  redraw();
+});
+document.getElementById('btnReset').addEventListener('click', () => {
+  vis.fill(true);
+  document.querySelectorAll('.leg-btn').forEach(b => {
+    b.classList.add('active'); b.classList.remove('off');
+  });
+  redraw();
+});
+
+// ============================================================
+//  初始化
+// ============================================================
+buildParams();
+buildLegend();
+buildTable();
+redraw();
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+if (e.key === 'F12' || 
+(e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+(e.ctrlKey && e.key === 'U') ||
+(e.ctrlKey && e.key === 'S')) {
+e.preventDefault();
+return false;
+}
+});
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+if (e.key === 'F12' || 
+(e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+(e.ctrlKey && e.key === 'U') ||
+(e.ctrlKey && e.key === 'S')) {
+e.preventDefault();
+return false;
+}
+});
+
+</script>
+<script>
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        (e.ctrlKey && e.key === 'U') ||
+        (e.ctrlKey && e.key === 'S')) {
+      e.preventDefault();
+      return false;
+    }
+  });
+</script>
+
+</body>
+</html>
