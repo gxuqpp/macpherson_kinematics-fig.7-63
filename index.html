@@ -1,519 +1,953 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>图7-63 麦弗逊式独立悬架运动特性</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>麦弗逊悬架运动学分析工具</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;background:#1c2540;color:#e8edf5;min-height:100vh;font-size:18px}
+  :root {
+    --bg:       #070b10;
+    --panel:    #0e151e;
+    --panel2:   #131c27;
+    --border:   #1e2d3d;
+    --border2:  #253345;
+    --amber:    #f0a500;
+    --amber2:   #ffcc44;
+    --teal:     #00d4aa;
+    --red:      #e05555;
+    --blue:     #4499e8;
+    --text:     #d8eaf8;
+    --text2:    #8ab0cc;
+    --text3:    #3d5570;
+    --input-bg: #0a1320;
+    --tag-bg:   #1a2a3a;
+    --mono:     'Courier New','Lucida Console',monospace;
+    --ui:       'Segoe UI','Arial',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--ui);font-size:16px;min-height:100vh;overflow-x:hidden;-webkit-text-size-adjust:100%;}
 
-header{
-  background:linear-gradient(135deg,#0f1a30 0%,#1a2744 100%);
-  color:#fff;padding:22px 28px;
-  border-bottom:5px solid #c0392b;
-}
-header h1{font-size:1.5em;font-weight:700;margin-bottom:6px;line-height:1.3}
-header p{font-size:1.0em;color:#b0ccdf;line-height:1.6}
+  /* ── Header ── */
+  header{background:var(--panel);border-bottom:2px solid var(--amber);padding:11px 16px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;}
+  .logo-mark{width:40px;height:40px;background:var(--amber);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .logo-mark span{color:#000;font-weight:900;font-size:14px;font-family:var(--mono);}
+  header h1{font-size:19px;font-weight:700;color:var(--amber);letter-spacing:.03em;line-height:1.2;}
+  header p{font-size:12px;color:var(--text2);margin-top:2px;}
+  .header-badge{margin-left:auto;background:var(--tag-bg);border:1px solid var(--border2);border-radius:4px;padding:5px 12px;font-size:13px;color:var(--teal);font-family:var(--mono);white-space:nowrap;flex-shrink:0;}
 
-.wrap{max-width:1440px;margin:0 auto;padding:18px 16px}
+  /* ── Tab bar ── */
+  .tab-bar{display:none;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:64px;z-index:99;}
+  .tab-btn{flex:1;padding:13px 8px;background:none;border:none;color:var(--text2);font-size:15px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;transition:color .15s,border-color .15s;}
+  .tab-btn.active{color:var(--amber);border-bottom-color:var(--amber);}
 
-.card{background:#253154;border-radius:10px;box-shadow:0 3px 14px rgba(0,0,0,.35);padding:20px 22px;margin-bottom:18px}
+  /* ── Layout ── */
+  .main{display:flex;height:calc(100vh - 66px);}
 
-/* ── 参数栏 ── */
-.param-row{display:flex;flex-wrap:wrap;gap:22px;align-items:center}
-.param{display:flex;flex-direction:column;gap:4px}
-.param .lbl{font-size:.85em;color:#8aadcc}
-.param .val{font-size:1.1em;font-weight:700;color:#a8d4f5}
+  /* ── Sidebar ── */
+  .sidebar{width:360px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+  .sidebar::-webkit-scrollbar{width:6px;}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
 
-/* ── 图例 ── */
-.legend-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.leg-btn{
-  display:flex;align-items:center;gap:9px;padding:9px 16px;
-  border-radius:22px;cursor:pointer;border:2px solid #3a5080;
-  background:#1c3060;font-size:1.0em;transition:all .18s;
-  user-select:none;color:#e0eaf5;
-}
-.leg-btn.active{background:#1e3a70;border-color:#6090c0;box-shadow:0 1px 8px rgba(0,0,0,.3)}
-.leg-btn.off{opacity:.32}
-.badge{font-size:.75em;background:#c0392b;color:#fff;padding:3px 8px;border-radius:4px;font-weight:700}
+  .section{padding:13px 15px;border-bottom:1px solid var(--border);}
+  .section-title{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .section-title::after{content:'';flex:1;height:1px;background:var(--border2);}
+  .point-note{font-size:12px;color:var(--text3);font-family:var(--mono);margin-bottom:8px;}
 
-/* ── 图表网格 ── */
-.charts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-@media(max-width:1100px){.charts-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:500px) {.charts-grid{grid-template-columns:1fr}}
-.chart-wrap h3{font-size:1.0em;color:#b8d4ee;margin-bottom:8px;text-align:center;font-weight:700}
-.chart-wrap svg{width:100%;height:auto;display:block}
+  /* 3-column XYZ grid */
+  .xyz-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  .xyz-item{display:flex;flex-direction:column;gap:3px;}
+  .xyz-item label{font-size:13px;color:var(--text2);font-family:var(--mono);}
+  .xyz-item input{background:var(--input-bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:16px;padding:7px 8px;width:100%;outline:none;transition:border-color .15s;}
+  .xyz-item input:focus{border-color:var(--amber);box-shadow:0 0 0 2px rgba(240,165,0,.2);}
+  .xyz-hint{font-size:11px;color:var(--text3);text-align:center;margin-top:5px;font-family:var(--mono);}
 
-/* ── 操作按钮 ── */
-.controls{display:flex;gap:10px;flex-wrap:wrap}
-.btn{
-  background:rgba(200,130,40,.12);border:1.5px solid rgba(200,130,40,.35);
-  color:#e0a050;padding:10px 22px;border-radius:6px;cursor:pointer;
-  font-size:1.0em;font-family:inherit;transition:all .18s;
-}
-.btn:hover{background:rgba(200,130,40,.26);border-color:rgba(200,130,40,.6)}
+  /* Param rows (2-col) */
+  .param-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .param-item{display:flex;flex-direction:column;gap:3px;}
+  .param-item label{font-size:13px;color:var(--text2);font-family:var(--mono);}
+  .param-item input{background:var(--input-bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:16px;padding:7px 9px;width:100%;outline:none;transition:border-color .15s;}
+  .param-item input:focus{border-color:var(--amber);box-shadow:0 0 0 2px rgba(240,165,0,.2);}
 
-/* ── 分析卡片 ── */
-.analysis-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-@media(max-width:1100px){.analysis-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:500px) {.analysis-grid{grid-template-columns:1fr}}
-.acard{border-left:5px solid #3a7bd5;padding-left:16px}
-.acard h4{font-size:1.0em;margin-bottom:8px;font-weight:700;color:#c8dff5}
-.acard p{font-size:.92em;color:#b0c8e0;line-height:1.85}
+  /* Scale rows */
+  .scale-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .scale-cb{accent-color:var(--amber);width:18px;height:18px;cursor:pointer;flex-shrink:0;}
+  .scale-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
+  .scale-label{font-size:14px;color:var(--text2);font-family:var(--mono);flex:1;}
+  .scale-input{width:72px;background:var(--input-bg);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:15px;padding:5px 7px;outline:none;text-align:center;}
+  .scale-input:focus{border-color:var(--amber);}
+  .scale-l1{font-size:12px;color:var(--teal);font-family:var(--mono);width:65px;text-align:right;}
 
-/* ── 数据表 ── */
-.tbl-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:1.0em;margin-top:12px;min-width:580px}
-table th{background:#0f1f40;color:#a8ccee;padding:11px 12px;text-align:center;font-weight:700}
-table td{padding:10px 12px;text-align:center;border-bottom:1px solid #2a3a58;color:#d0e0f0}
-table tr:nth-child(even) td{background:#1e2e50}
-table tr.hl td{background:#2a3a20;font-weight:700;color:#ffe066}
-.star{color:#f5a623}
+  /* Derived */
+  .derived-grid{display:flex;flex-direction:column;gap:5px;}
+  .derived-row{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:var(--input-bg);border-radius:4px;border:1px solid var(--border);}
+  .derived-label{font-size:13px;color:var(--text2);font-family:var(--mono);}
+  .derived-val{font-size:16px;color:var(--teal);font-family:var(--mono);font-weight:700;}
 
-footer{text-align:center;padding:16px;font-size:.9em;color:#7090b0}
+  /* Buttons */
+  .btn-compute{width:calc(100% - 30px);margin:13px 15px;padding:13px;background:var(--amber);color:#000;font-weight:800;font-size:17px;border:none;border-radius:6px;cursor:pointer;letter-spacing:.05em;text-transform:uppercase;transition:background .15s,transform .1s;}
+  .btn-compute:hover{background:var(--amber2);}
+  .btn-compute:active{transform:scale(.98);}
+  .btn-compute:disabled{background:var(--border2);color:var(--text3);cursor:not-allowed;}
+  .btn-row{display:flex;gap:8px;margin:0 15px 13px;}
+  .btn-sm{flex:1;padding:9px;background:var(--panel2);border:1px solid var(--border2);color:var(--text2);font-size:14px;border-radius:4px;cursor:pointer;transition:background .15s,color .15s;}
+  .btn-sm:hover{background:var(--border2);color:var(--text);}
+  .status-bar{margin:0 15px 13px;padding:8px 12px;background:var(--input-bg);border-radius:4px;border:1px solid var(--border);font-size:13px;font-family:var(--mono);color:var(--text2);min-height:36px;}
+  .status-bar.ok{color:var(--teal);border-color:var(--teal);background:rgba(0,200,160,.07);}
+  .status-bar.err{color:var(--red);border-color:var(--red);background:rgba(224,85,85,.07);}
+  .status-bar.run{color:var(--amber);border-color:var(--amber);}
+
+  /* ── Charts ── */
+  .chart-area{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .chart-row{flex:1;display:flex;min-height:0;}
+  .chart-wrap{flex:1;position:relative;padding:12px 8px 12px 8px;border-right:1px solid var(--border);display:flex;flex-direction:column;min-width:0;min-height:0;}
+  .chart-wrap:last-child{border-right:none;}
+  .chart-header{display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:5px;flex-shrink:0;}
+  .chart-title{font-size:14px;font-weight:700;color:var(--text2);text-align:center;letter-spacing:.04em;font-family:var(--mono);}
+  .btn-dl-chart{position:absolute;right:0;top:50%;transform:translateY(-50%);background:var(--panel2);border:1px solid var(--border2);border-radius:4px;color:var(--teal);font-size:11px;padding:2px 7px;cursor:pointer;font-family:var(--mono);transition:background .15s,color .15s;white-space:nowrap;}
+  .btn-dl-chart:hover{background:var(--border2);color:var(--amber);}
+  canvas.plot{flex:1;width:100%;display:block;height:0;min-height:140px;}
+  .legend{display:flex;flex-wrap:wrap;gap:7px 14px;padding:7px 12px;border-top:1px solid var(--border);justify-content:center;flex-shrink:0;}
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .legend-line{width:26px;height:3px;border-radius:2px;}
+  .legend-text{font-size:13px;font-family:var(--mono);color:var(--text2);}
+  .summary-bar{border-top:1px solid var(--border);background:var(--panel);padding:7px 14px;overflow-x:auto;flex-shrink:0;}
+  .summary-bar::-webkit-scrollbar{height:5px;}
+  .summary-bar::-webkit-scrollbar-thumb{background:var(--border2);}
+  .summary-table{font-family:var(--mono);font-size:13px;border-collapse:collapse;white-space:nowrap;color:var(--text2);}
+  .summary-table th{color:var(--amber);font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:4px 11px 4px 0;font-weight:700;border-bottom:1px solid var(--border2);}
+  .summary-table td{padding:3px 11px 3px 0;border-bottom:1px solid var(--border);}
+  .summary-table td.hi{color:var(--text);}
+
+  /* ── Override inputs ── */
+  .override-title{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);margin:12px 0 4px;display:flex;align-items:center;gap:8px;}
+  .override-title::after{content:'';flex:1;height:1px;background:var(--border2);}
+  .override-hint{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;}
+  .override-grid{display:flex;flex-direction:column;gap:5px;}
+  .override-row{display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--input-bg);border-radius:4px;border:1px solid var(--border);}
+  .override-label{font-size:12px;color:var(--text2);font-family:var(--mono);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .override-input{width:80px;min-width:0;background:#0a1825;border:1px solid var(--teal);border-radius:4px;color:var(--teal);font-family:var(--mono);font-size:12px;padding:4px 4px;outline:none;text-align:center;transition:border-color .15s;flex-shrink:0;}
+  .override-input:focus{border-color:var(--amber2);box-shadow:0 0 0 2px rgba(255,204,68,.18);}
+  .override-input.user-edited{border-color:var(--amber);color:var(--amber2);}
+
+  /* ── Mobile ── */
+  @media(max-width:768px){
+    header{padding:10px 12px;}
+    header h1{font-size:16px;}
+    header p{font-size:11px;}
+    .header-badge{font-size:11px;padding:4px 8px;}
+    .logo-mark{width:34px;height:34px;}
+    .tab-bar{display:flex;}
+    .main{flex-direction:column;height:auto;}
+    .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);overflow-y:visible;display:none;flex-shrink:0;}
+    .sidebar.tab-active{display:flex;}
+    .chart-area{display:none;}
+    .chart-area.tab-active{display:flex;}
+    .chart-row{flex-direction:column;flex:none;height:auto;}
+    .chart-wrap{height:290px;flex:none;border-right:none;border-bottom:1px solid var(--border);}
+    canvas.plot{min-height:0;}
+    .btn-compute{font-size:18px;padding:14px;}
+    .btn-sm{font-size:15px;padding:10px;}
+    .xyz-item input,.param-item input{font-size:16px;padding:9px 8px;}
+    .xyz-item label,.param-item label{font-size:14px;}
+    .derived-label{font-size:14px;}
+    .derived-val{font-size:17px;}
+    .scale-label{font-size:15px;}
+    .scale-input{font-size:16px;width:78px;}
+    .chart-title{font-size:15px;}
+    .legend-text{font-size:14px;}
+    .section-title{font-size:14px;}
+    .status-bar{font-size:14px;}
+  }
+  @media(max-width:420px){header h1{font-size:14px;}header p,.header-badge{display:none;}}
 user-select: none
 </style>
 </head>
 <body>
 
 <header>
-  <h1>图 7-63 &nbsp; 麦弗逊式独立悬架运动特性</h1>
-  <p>参考：闵海涛《汽车设计》第6版 §7.5 &nbsp;|&nbsp;
-     下横臂长度 l₁ 变化对悬架运动特性的影响分析（Z — β、Z — α、Z — γ、Z — Bᵧ）</p>
+  <div class="logo-mark"><span>MP</span></div>
+  <div>
+    <h1>麦弗逊悬架运动学分析工具·广西大学 ·车辆工程专业 ·《汽车设计》课程教学团队</h1>
+    <p>MacPherson Strut Kinematics — 4-DOF Constraint Solver &nbsp;|&nbsp; 图7-63复现</p>
+  </div>
+  <div class="header-badge">OFFLINE · NO DEPS</div>
 </header>
 
-<div class="wrap">
-
-<!-- ① 参数 -->
-<div class="card">
-  <div class="param-row" id="param-row"></div>
+<div class="tab-bar" id="tab-bar">
+  <button class="tab-btn active" id="tab-params" onclick="switchTab('params')">⚙ 参数设置</button>
+  <button class="tab-btn" id="tab-charts" onclick="switchTab('charts')">📈 分析图表</button>
 </div>
 
-<!-- ② 图例 -->
-<div class="card">
-  <div style="font-size:.95em;color:#8aadcc;margin-bottom:12px">点击可切换显示 / 隐藏对应曲线：</div>
-  <div class="legend-row" id="legend"></div>
-</div>
+<div class="main">
 
-<!-- ③ 图表 -->
-<div class="card">
-  <div class="charts-grid">
-    <div class="chart-wrap">
-      <h3>① 主销内倾角（Z — β）</h3>
-      <svg id="svg-beta"  viewBox="0 0 340 470"></svg>
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar tab-active" id="panel-params">
+
+  <!-- strut_upper -->
+  <div class="section">
+    <div class="section-title">滑柱副上端球铰</div>
+    <div class="point-note">strut_upper — 固定于车身</div>
+    <div class="xyz-grid">
+      <div class="xyz-item"><label>X (mm)</label><input type="number" id="su_x" value="0" step="1"></div>
+      <div class="xyz-item"><label>Y (mm)</label><input type="number" id="su_y" value="-600" step="1"></div>
+      <div class="xyz-item"><label>Z (mm)</label><input type="number" id="su_z" value="800" step="1"></div>
     </div>
-    <div class="chart-wrap">
-      <h3>② 车轮外倾角（Z — α）</h3>
-      <svg id="svg-alpha" viewBox="0 0 340 470"></svg>
-    </div>
-    <div class="chart-wrap">
-      <h3>③ 主销后倾角（Z — γ）</h3>
-      <svg id="svg-gamma" viewBox="0 0 340 470"></svg>
-    </div>
-    <div class="chart-wrap">
-      <h3>④ 半轮距（Z — Bᵧ）</h3>
-      <svg id="svg-by"    viewBox="0 0 340 470"></svg>
+    <div class="xyz-hint">X=纵向 &nbsp;·&nbsp; Y=横向(负=外) &nbsp;·&nbsp; Z=垂向(正=上)</div>
+  </div>
+
+  <!-- strut_lower -->
+  <div class="section">
+    <div class="section-title">滑柱副下端连接点</div>
+    <div class="point-note">strut_lower — 固定于转向节</div>
+    <div class="xyz-grid">
+      <div class="xyz-item"><label>X (mm)</label><input type="number" id="sl_x" value="0" step="1"></div>
+      <div class="xyz-item"><label>Y (mm)</label><input type="number" id="sl_y" value="-650" step="1"></div>
+      <div class="xyz-item"><label>Z (mm)</label><input type="number" id="sl_z" value="450" step="1"></div>
     </div>
   </div>
-</div>
 
-<!-- ④ 操作 -->
-<div class="card">
-  <div class="controls">
-    <button class="btn" id="btnAll">显示全部曲线</button>
-    <button class="btn" id="btnRef">仅参考曲线（3-3）</button>
-    <button class="btn" id="btnReset">重置</button>
-  </div>
-</div>
-
-<!-- ⑤ 分析 -->
-<div class="card">
-  <div class="analysis-grid">
-    <div class="acard">
-      <h4>📐 β &nbsp;主销内倾角</h4>
-      <p>
-        下横臂越短（曲线 1-1），悬架跳动时主销内倾角变化幅度越大；
-        臂越长（曲线 5-5）曲线越平缓。设计时需兼顾回正力矩与轮胎磨损。
-      </p>
-    </div>
-    <div class="acard" style="border-left-color:#27ae60">
-      <h4>↗ α &nbsp;车轮外倾角</h4>
-      <p>
-        压缩时产生负外倾，有利于弯道稳定性。
-        下横臂越短，外倾变化越剧烈，
-        过度负外倾会导致轮胎内侧异常磨损。
-      </p>
-    </div>
-    <div class="acard" style="border-left-color:#e67e22">
-      <h4>↪ γ &nbsp;主销后倾角</h4>
-      <p>
-        后倾角曲线上下两段均呈向右弯曲趋势（正曲率）。
-        压缩时（上半）臂越短（1-1）γ越大，从左到右排列为 5、3、1；
-        回弹时（下半）排列为 1、3、5。图中仅示 1、3、5 三条代表性曲线。
-      </p>
-    </div>
-    <div class="acard" style="border-left-color:#9b59b6">
-      <h4>↔ Bᵧ &nbsp;半轮距</h4>
-      <p>
-        跳动引起轮距变化是轮胎磨损的重要因素。
-        下横臂越短，轮距变化越大。
-        曲线 3-3（参考）为常用设计折中方案。
-      </p>
+  <!-- arm_front -->
+  <div class="section">
+    <div class="section-title">LCA 前铰点</div>
+    <div class="point-note">arm_front — 与副车架连接</div>
+    <div class="xyz-grid">
+      <div class="xyz-item"><label>X (mm)</label><input type="number" id="af_x" value="-200" step="1"></div>
+      <div class="xyz-item"><label>Y (mm)</label><input type="number" id="af_y" value="-400" step="1"></div>
+      <div class="xyz-item"><label>Z (mm)</label><input type="number" id="af_z" value="205" step="1"></div>
     </div>
   </div>
-</div>
 
-<!-- ⑥ 数据表 -->
-<div class="card">
-  <div style="font-weight:700;margin-bottom:8px;font-size:1.05em;color:#b8d4ee">
-    各臂长在 ±100 mm 跳动范围内的参数变化量（峰-峰值）
+  <!-- arm_rear -->
+  <div class="section">
+    <div class="section-title">LCA 后铰点</div>
+    <div class="point-note">arm_rear — 与副车架连接</div>
+    <div class="xyz-grid">
+      <div class="xyz-item"><label>X (mm)</label><input type="number" id="ar_x" value="200" step="1"></div>
+      <div class="xyz-item"><label>Y (mm)</label><input type="number" id="ar_y" value="-390" step="1"></div>
+      <div class="xyz-item"><label>Z (mm)</label><input type="number" id="ar_z" value="220" step="1"></div>
+    </div>
   </div>
-  <div class="tbl-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>曲线</th>
-          <th>l₁ (m)</th>
-          <th>Δβ (°)</th>
-          <th>Δα (°)</th>
-          <th>Δγ (°)</th>
-          <th>ΔBᵧ (cm)</th>
-          <th>综合评价</th>
-        </tr>
-      </thead>
-      <tbody id="tbl-body"></tbody>
+
+  <!-- arm_out -->
+  <div class="section">
+    <div class="section-title">LCA 外球头（下铰点）</div>
+    <div class="point-note">arm_out — 与转向节下端连接</div>
+    <div class="xyz-grid">
+      <div class="xyz-item"><label>X (mm)</label><input type="number" id="ao_x" value="-30" step="1"></div>
+      <div class="xyz-item"><label>Y (mm)</label><input type="number" id="ao_y" value="-700" step="1"></div>
+      <div class="xyz-item"><label>Z (mm)</label><input type="number" id="ao_z" value="180" step="1"></div>
+    </div>
+  </div>
+
+  <!-- wheel_center -->
+  <div class="section">
+    <div class="section-title">车轮中心</div>
+    <div class="point-note">wheel_center — 初始静态位置</div>
+    <div class="xyz-grid">
+      <div class="xyz-item"><label>X (mm)</label><input type="number" id="wc_x" value="0" step="1"></div>
+      <div class="xyz-item"><label>Y (mm)</label><input type="number" id="wc_y" value="-800" step="1"></div>
+      <div class="xyz-item"><label>Z (mm)</label><input type="number" id="wc_z" value="300" step="1"></div>
+    </div>
+  </div>
+
+  <!-- LCA arm length curves -->
+  <div class="section">
+    <div class="section-title">LCA 有效臂长曲线（× l₁基准）</div>
+    <div id="scale-rows"></div>
+    <div class="xyz-hint" style="text-align:left;margin-top:2px;">比例值 × l₁基准长 = 实际有效臂长</div>
+  </div>
+
+  <!-- Z range -->
+  <div class="section">
+    <div class="section-title">车轮跳动范围</div>
+    <div class="param-grid">
+      <div class="param-item"><label>Z最小值 (mm)</label><input type="number" id="z_min" value="-100" step="10"></div>
+      <div class="param-item"><label>Z最大值 (mm)</label><input type="number" id="z_max" value="100" step="10"></div>
+      <div class="param-item"><label>计算点数</label><input type="number" id="z_pts" value="201" min="51" max="601" step="50"></div>
+    </div>
+  </div>
+
+  <!-- Derived values -->
+  <div class="section">
+    <div class="section-title">推导量（只读）</div>
+    <div class="derived-grid">
+      <div class="derived-row"><span class="derived-label">l₁基准有效臂长</span><span class="derived-val" id="d_l1">—</span></div>
+      <div class="derived-row"><span class="derived-label">初始主销内倾 β₀</span><span class="derived-val" id="d_beta0">—</span></div>
+      <div class="derived-row"><span class="derived-label">初始主销后倾 γ₀</span><span class="derived-val" id="d_gamma0">—</span></div>
+      <div class="derived-row"><span class="derived-label">初始半轮距 By₀</span><span class="derived-val" id="d_by0">—</span></div>
+      <div class="derived-row"><span class="derived-label">滑柱初始长度</span><span class="derived-val" id="d_strut">—</span></div>
+      <div class="derived-row"><span class="derived-label">主销轴与垂向夹角</span><span class="derived-val" id="d_kplen">—</span></div>
+    </div>
+    <!-- Override inputs -->
+    <div class="override-title">自定义覆盖（可选）</div>
+    <div class="override-hint">默认引用推导值；直接修改可覆盖参与计算（变为琥珀色）。双击恢复自动。</div>
+    <div class="override-grid">
+      <div class="override-row">
+        <span class="override-label">l₁基准臂长 (mm)</span>
+        <input type="number" class="override-input" id="ov_l1" data-auto="1" step="0.1">
+      </div>
+      <div class="override-row">
+        <span class="override-label">初始 β₀ (°)</span>
+        <input type="number" class="override-input" id="ov_beta0" data-auto="1" step="0.01">
+      </div>
+      <div class="override-row">
+        <span class="override-label">初始 γ₀ (°)</span>
+        <input type="number" class="override-input" id="ov_gamma0" data-auto="1" step="0.01">
+      </div>
+      <div class="override-row">
+        <span class="override-label">初始 By₀ (cm)</span>
+        <input type="number" class="override-input" id="ov_by0" data-auto="1" step="0.01">
+      </div>
+      <div class="override-row">
+        <span class="override-label">滑柱初始长度 (mm)</span>
+        <input type="number" class="override-input" id="ov_strut" data-auto="1" step="0.1">
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-compute" id="btn-run" onclick="runSim()">▶ 开始计算</button>
+  <div class="btn-row">
+    <button class="btn-sm" onclick="resetDefaults()">↺ 恢复默认</button>
+    <button class="btn-sm" onclick="exportPNG()">↓ 导出全部图（Word适用）</button>
+  </div>
+  <div class="status-bar" id="status">就绪。修改硬点后点击"开始计算"。</div>
+
+</div><!-- /sidebar -->
+
+<!-- ═══ CHART AREA ═══ -->
+<div class="chart-area" id="panel-charts">
+  <div class="chart-row">
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">主销内倾角  β / °</div>
+        <button class="btn-dl-chart" onclick="downloadChart('c-beta','主销内倾角_beta')">↓ 下载</button>
+      </div>
+      <canvas class="plot" id="c-beta"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">车轮外倾角  α / °</div>
+        <button class="btn-dl-chart" onclick="downloadChart('c-alpha','外倾角_alpha')">↓ 下载</button>
+      </div>
+      <canvas class="plot" id="c-alpha"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">主销后倾角  γ / °</div>
+        <button class="btn-dl-chart" onclick="downloadChart('c-gamma','主销后倾角_gamma')">↓ 下载</button>
+      </div>
+      <canvas class="plot" id="c-gamma"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">半轮距  B<sub>y</sub> / cm</div>
+        <button class="btn-dl-chart" onclick="downloadChart('c-by','半轮距_By')">↓ 下载</button>
+      </div>
+      <canvas class="plot" id="c-by"></canvas>
+    </div>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="summary-bar">
+    <table class="summary-table" id="summary-tbl">
+      <tr><th>曲线</th><th colspan="5">— 请先点击计算 —</th></tr>
     </table>
   </div>
-</div>
+</div><!-- /chart-area -->
 
-</div><!-- .wrap -->
-
-<footer>基于《汽车设计》第6版（闵海涛主编）图7-63 · 麦弗逊式独立悬架运动学解析模型</footer>
+</div><!-- /main -->
 
 <script>
-// ============================================================
-//  运动学模型  Kinematics model (polynomial approximation)
-//
-//  sc     = ARM_REF / l1  臂越短 sc 越大（曲线 1 最大）
-//  sc_inv = l1 / ARM_REF  臂越长 sc_inv 越大（曲线 5 最大）
-//
-//  各图正确趋势（括号内为 Z=+100 处各曲线的左→右排列顺序）：
-//  ① β：上半 1<2<3<4<5，下半 5<4<3<2<1 → X 型交叉，用 sc_inv
-//  ② α：上下两半均 5<4<3<2<1（扇形，无交叉），用 sc_inv 且系数恒正
-//  ③ γ：上下两半均 5<4<3<2<1（扇形），差异微小，用 z² 曲率区分
-//  ④ Bᵧ：上下两半均 1<2<3<4<5（两侧均向左，用 sc·z²）
-// ============================================================
-const ARM_LENGTHS = [0.262, 0.312, 0.362, 0.412, 0.462];
-const ARM_LABELS  = ['1–1','2–2','3–3','4–4','5–5'];
-const ARM_REF     = 0.362;  // 参考臂长（曲线 3-3）
+'use strict';
 
-// 暖橙色系，与原图一致，参考曲线加粗
-const COLORS  = ['#ff6818','#e89010','#c8a020','#98b830','#58c860'];
-const LWIDTHS = [1.8, 1.8, 3.2, 1.8, 1.8];
+// ═══════════════════════════════════════════════
+//  Configuration
+// ═══════════════════════════════════════════════
+const COLORS = ['#e05555','#f0a500','#30c080','#4499e8','#bb66dd'];
+const DEF_SCALES = [0.76, 0.88, 1.00, 1.12, 1.24];
 
-function kinematics(l1, Z) {
-  const sc     = ARM_REF / l1;   // 短臂大（曲线1最大≈1.38，曲线5最小≈0.78）
-  const sc_inv = l1 / ARM_REF;   // 长臂大（曲线5最大≈1.28，曲线1最小≈0.72）
-  const z      = Z / 100.0;      // 归一化 [-1, 1]
+// ═══════════════════════════════════════════════
+//  3-D Math Utilities
+// ═══════════════════════════════════════════════
+const dot3  = (a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const norm3 = a=>Math.sqrt(dot3(a,a));
+const add3  = (a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const sub3  = (a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const sc3   = (a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+const norm3v = a=>{ const n=norm3(a); return n<1e-15?[0,0,0]:[a[0]/n,a[1]/n,a[2]/n]; };
 
-  return {
-    // ① 主销内倾角 β — X型交叉
-    //    压缩(z>0)：1最左→5最右；回弹(z<0)：5最左→1最右
-    //    修正：原式用sc（臂越短变化越大），应改为sc_inv（臂越长变化越大）
-    beta:  14.0 + sc_inv * (1.70*z - 0.50*z*z),
-
-    // ② 车轮外倾角 α — X型交叉，与β左右镜像
-    //    关键：乘以 sc_inv 的部分不含常数项，保证所有曲线在 Z=0 处汇于 α≈0
-    //    与β公式: 14 + sc_inv*(1.70z - 0.50z²) 对称，符号取反，基准取0°
-    //    Z=0 时 α=0（所有曲线相交于横坐标靠近0处）
-    alpha: 0.0 - sc_inv * (1.70*z - 0.50*z*z),
-
-    // ③ 主销后倾角 γ — X型交叉 + 向右弯趋势，只显示 1、3、5 三条曲线
-    //    公式：3.50 + sc*(0.35z + 0.15z²)
-    //    线性项 sc*0.35z（z>0时曲线1最右；z<0时曲线1最左）→ X型交叉
-    //    二次项 sc*0.15z²（系数恒正）→ 上下两段均向右弯曲
-    //    Z=+100：γ₁=4.19 > γ₃=4.00 > γ₅=3.89  上半左→右：5,3,1 ✓
-    //    Z=−100：γ₁=3.22 < γ₃=3.30 < γ₅=3.34  下半左→右：1,3,5 ✓
-    gamma: 3.50 + sc * (0.35*z + 0.15*z*z),
-
-    // ④ 半轮距 Bᵧ — 两侧均向左（Bᵧ随|Z|增大而减小）
-    //    用 sc·z²：短臂(sc大)→减幅最大→曲线1始终最左
-    //    对称抛物线确保上下两半趋势相同（均向左）
-    by:    73.0 - sc * 1.5 * z * z,
-  };
+/** Rodrigues rotation matrix (3×3 flat row-major array) */
+function rmat3(axis, angle) {
+  const n=norm3v(axis);
+  const ax=n[0],ay=n[1],az=n[2];
+  const c=Math.cos(angle),t=1-c,s=Math.sin(angle);
+  return [t*ax*ax+c,     t*ax*ay-s*az, t*ax*az+s*ay,
+          t*ax*ay+s*az,  t*ay*ay+c,    t*ay*az-s*ax,
+          t*ax*az-s*ay,  t*ay*az+s*ax, t*az*az+c   ];
 }
 
-const Z_MIN=-100, Z_MAX=100, N_PTS=201;
-const zArr = Array.from({length:N_PTS}, (_,i) => Z_MIN + (Z_MAX-Z_MIN)*i/(N_PTS-1));
+/** 3×3 matrix × 3-vector */
+function mv3(M,v){ return [M[0]*v[0]+M[1]*v[1]+M[2]*v[2], M[3]*v[0]+M[4]*v[1]+M[5]*v[2], M[6]*v[0]+M[7]*v[1]+M[8]*v[2]]; }
 
-// 预计算所有曲线数据
-const allCurves = ARM_LENGTHS.map(l1 => ({
-  l1,
-  pts: zArr.map(Z => ({ Z, ...kinematics(l1, Z) }))
-}));
-
-let vis = ARM_LENGTHS.map(() => true);
-
-// ============================================================
-//  图表配置（x轴范围已按新公式重新核定）
-// ============================================================
-const PLOTS = [
-  { svgId:'svg-beta',  key:'beta',  xLabel:'β / (°)',
-    xMin:10.5, xMax:16.0, ticks:[11,12,13,14,15] },
-  { svgId:'svg-alpha', key:'alpha', xLabel:'α / (°)',
-    xMin:-2.0, xMax: 3.5, ticks:[-1,0,1,2,3] },
-  { svgId:'svg-gamma', key:'gamma', xLabel:'γ / (°)',
-    xMin: 2.9, xMax: 4.5, ticks:[3.0,3.5,4.0],
-    curves:[0,2,4] },  // 只显示曲线 1、3、5
-  { svgId:'svg-by',    key:'by',    xLabel:'Bᵧ / cm',
-    xMin:70.0, xMax:73.5, ticks:[71,72,73] },
-];
-
-// ============================================================
-//  SVG 绘图
-// ============================================================
-const NS = 'http://www.w3.org/2000/svg';
-const VB = {w:340, h:470};
-const M  = {t:40, r:18, b:64, l:60};
-const CW = VB.w - M.l - M.r;   // 262 px
-const CH = VB.h - M.t - M.b;   // 366 px
-
-function E(tag, attrs, txt) {
-  const e = document.createElementNS(NS, tag);
-  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
-  if (txt !== undefined) e.textContent = txt;
-  return e;
+/** 3×3 × 3×3 */
+function mm3(A,B){
+  const R=new Array(9);
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++){R[i*3+j]=0;for(let k=0;k<3;k++)R[i*3+j]+=A[i*3+k]*B[k*3+j];}
+  return R;
 }
 
-function sx(val, p) {
-  return M.l + CW * (val - p.xMin) / (p.xMax - p.xMin);
-}
-function sz(Z) {
-  return M.t + CH * (1 - (Z - Z_MIN) / (Z_MAX - Z_MIN));
-}
-
-function drawChart(p) {
-  const svg = document.getElementById(p.svgId);
-  svg.innerHTML = '';
-
-  // ── 背景
-  svg.appendChild(E('rect',{x:0,y:0,width:VB.w,height:VB.h,fill:'#1a2844'}));
-  svg.appendChild(E('rect',{x:M.l,y:M.t,width:CW,height:CH,
-    fill:'#1e3060',stroke:'#3a5080','stroke-width':1.2}));
-
-  // ── Z 轴网格线
-  for (let z=Z_MIN; z<=Z_MAX+0.1; z+=20) {
-    const y=sz(z), iz=(z===0);
-    svg.appendChild(E('line',{
-      x1:M.l,y1:y,x2:M.l+CW,y2:y,
-      stroke:iz?'#8099bb':'#2a3f60',
-      'stroke-width':iz?1.5:0.9,
-      'stroke-dasharray':iz?'6,3':''
-    }));
-    svg.appendChild(E('text',{
-      x:M.l-7,y:y+4.5,
-      'text-anchor':'end','font-size':'14',
-      fill:'#8ab0d8','font-weight':iz?'700':'400'
-    }, String(z)));
+/** Gaussian elimination (partial pivot) for 4×4 system A·x = b */
+function solve4(A, b) {
+  const M = A.map((row,i)=>[...row, b[i]]);
+  for(let col=0;col<4;col++){
+    let mx=Math.abs(M[col][col]),mr=col;
+    for(let r=col+1;r<4;r++) if(Math.abs(M[r][col])>mx){mx=Math.abs(M[r][col]);mr=r;}
+    [M[col],M[mr]]=[M[mr],M[col]];
+    if(Math.abs(M[col][col])<1e-15) return null;
+    for(let r=col+1;r<4;r++){const f=M[r][col]/M[col][col];for(let k=col;k<=4;k++)M[r][k]-=f*M[col][k];}
   }
-
-  // ── X 轴刻度线与标注
-  p.ticks.forEach(tv => {
-    const x=sx(tv,p);
-    if (x<M.l-1||x>M.l+CW+1) return;
-    svg.appendChild(E('line',{
-      x1:x,y1:M.t,x2:x,y2:M.t+CH,
-      stroke:'#2a3f60','stroke-width':0.9
-    }));
-    const lbl = Number.isInteger(tv) ? String(tv) : tv.toFixed(1);
-    svg.appendChild(E('text',{
-      x:x,y:M.t+CH+18,
-      'text-anchor':'middle','font-size':'13',fill:'#8ab0d8'
-    }, lbl));
-  });
-
-  // ── 曲线（逆序使 1-1 在最上层）
-  const ciAll = p.curves ? p.curves : ARM_LENGTHS.map((_,i)=>i);
-  const ciDraw = ciAll.slice().reverse();
-  for (const ci of ciDraw) {
-    if (!vis[ci]) continue;
-    const pts = allCurves[ci].pts;
-    let d='';
-    pts.forEach((pt,i) => {
-      const x=sx(pt[p.key],p), y=sz(pt.Z);
-      d += (i===0?'M':'L') + x.toFixed(2) + ',' + y.toFixed(2);
-    });
-    svg.appendChild(E('path',{
-      d, fill:'none', stroke:COLORS[ci],
-      'stroke-width':LWIDTHS[ci],
-      'stroke-linejoin':'round','stroke-linecap':'round'
-    }));
-  }
-
-  // ── 端点曲线编号标注（顶部 Z_MAX，底部 Z_MIN）
-  [Z_MAX, Z_MIN].forEach(Zend => {
-    const isTop = (Zend === Z_MAX);
-
-    // 按 x 坐标排序（从小到大 = 从左到右）
-    const items = ciAll.map(ci => ({
-      ci,
-      xpx: sx(kinematics(ARM_LENGTHS[ci], Zend)[p.key], p)
-    })).filter(({ci}) => vis[ci]).sort((a,b) => a.xpx - b.xpx);
-
-    items.forEach(({ci, xpx}, rank) => {
-      const lx = Math.max(M.l+7, Math.min(M.l+CW-7, xpx));
-      // 顶部标注：交替 y 偏移以减少重叠
-      const dy = (items.length >= 4 && isTop) ? (rank % 2) * (-11) : 0;
-      const y  = isTop ? M.t - 5 + dy : M.t + CH + 16;
-      svg.appendChild(E('text',{
-        x:lx, y:y,
-        'text-anchor':'middle','font-size':'12','font-weight':'bold',
-        fill:COLORS[ci]
-      }, String(ci+1)));
-    });
-  });
-
-  // ── 坐标轴框架
-  svg.appendChild(E('line',{x1:M.l,y1:M.t,x2:M.l,y2:M.t+CH,stroke:'#88aacc','stroke-width':1.8}));
-  svg.appendChild(E('line',{x1:M.l,y1:M.t+CH,x2:M.l+CW,y2:M.t+CH,stroke:'#88aacc','stroke-width':1.8}));
-
-  // ── Y 轴标注
-  const cy = M.t + CH/2;
-  svg.appendChild(E('text',{
-    x:13, y:cy, 'text-anchor':'middle',
-    'font-size':'15','font-weight':'700',fill:'#a8c8e8',
-    transform:`rotate(-90,13,${cy})`
-  }, 'Z / mm'));
-
-  // ── X 轴标注
-  svg.appendChild(E('text',{
-    x:M.l+CW/2, y:VB.h-8,
-    'text-anchor':'middle','font-size':'15','font-weight':'700',fill:'#a8c8e8'
-  }, p.xLabel));
+  const x=new Array(4);
+  for(let r=3;r>=0;r--){x[r]=M[r][4];for(let c=r+1;c<4;c++)x[r]-=M[r][c]*x[c];x[r]/=M[r][r];}
+  return x;
 }
 
-function redraw() { PLOTS.forEach(p => drawChart(p)); }
+/** Newton-Raphson solver for F(x)=0, 4-D */
+function solveNR4(Ffunc, x0, maxIter=250, tol=1e-10) {
+  let x=[...x0]; const h=1e-7;
+  for(let iter=0;iter<maxIter;iter++){
+    const F=Ffunc(x);
+    if(Math.max(...F.map(Math.abs))<tol) break;
+    const J=Array.from({length:4},()=>new Array(4));
+    for(let i=0;i<4;i++){
+      const xp=[...x]; xp[i]+=h;
+      const Fp=Ffunc(xp);
+      for(let j=0;j<4;j++) J[j][i]=(Fp[j]-F[j])/h;
+    }
+    const dx=solve4(J, F.map(f=>-f));
+    if(!dx) break;
+    for(let i=0;i<4;i++) x[i]+=dx[i];
+  }
+  return x;
+}
 
-// ============================================================
-//  图例
-// ============================================================
-function buildLegend() {
-  const ctr = document.getElementById('legend');
-  ctr.innerHTML = '';
-  ARM_LENGTHS.forEach((l1,i) => {
-    const btn = document.createElement('div');
-    btn.className = 'leg-btn active';
-    btn.innerHTML = `
-      <svg width="36" height="${LWIDTHS[i]*2+8}" style="flex-shrink:0">
-        <line x1="2"  y1="${(LWIDTHS[i]*2+8)/2}"
-              x2="34" y2="${(LWIDTHS[i]*2+8)/2}"
-              stroke="${COLORS[i]}" stroke-width="${LWIDTHS[i]}"
-              stroke-linecap="round"/>
-      </svg>
-      <span>${ARM_LABELS[i]} &nbsp; l₁ = ${l1.toFixed(3)} m</span>
-      ${i===2 ? '<span class="badge">参考</span>' : ''}
+// ═══════════════════════════════════════════════
+//  Constraint Equations  (MATLAB: mcpherson_constraints)
+//  State x = [rx, ry, sp, theta]
+// ═══════════════════════════════════════════════
+function constraintEqs(x, g, dZ){
+  const [rx,ry,sp,theta]=x;
+  const Rx=rmat3([1,0,0],rx);
+  const Ry=rmat3([0,1,0],ry);
+  const R =mm3(Ry,Rx);
+
+  const P_sl=add3(add3(g.P_su, mv3(R,g.s_dir0)), sc3(mv3(R,g.s_dir0u),sp));
+  const P_ao=add3(P_sl, mv3(R,g.r_ball));   // LCA ball joint (knuckle side)
+  const P_wc=add3(P_sl, mv3(R,g.r_wc));     // Wheel center
+
+  const Rl=rmat3(g.lca_ax, theta);
+  const P_bl=add3(g.af, mv3(Rl,g.r_lca));   // LCA ball joint (LCA side)
+
+  return [P_ao[0]-P_bl[0], P_ao[1]-P_bl[1], P_ao[2]-P_bl[2], P_wc[2]-(g.wc_z0+dZ)];
+}
+
+// ═══════════════════════════════════════════════
+//  Extract kinematic angles from solved state
+// ═══════════════════════════════════════════════
+function extractAngles(x, g){
+  const [rx,ry,sp]=x;
+  const R=mm3(rmat3([0,1,0],ry), rmat3([1,0,0],rx));
+
+  const P_sl=add3(add3(g.P_su, mv3(R,g.s_dir0)), sc3(mv3(R,g.s_dir0u),sp));
+  const P_ao=add3(P_sl, mv3(R,g.r_ball));
+  const P_wc=add3(P_sl, mv3(R,g.r_wc));
+
+  const kpu=norm3v(sub3(g.P_su, P_ao));           // kingpin direction (ball→upper)
+  const beta  = Math.atan2(-kpu[1], kpu[2])*180/Math.PI;  // 主销内倾角
+  const gamma = Math.atan2( kpu[0], kpu[2])*180/Math.PI;  // 主销后倾角
+
+  const y_cur = mv3(R,[0,-1,0]);                   // current wheel spin axis
+  const alpha = Math.atan2(y_cur[2],-y_cur[1])*180/Math.PI; // 外倾角
+
+  const by = Math.abs(P_wc[1])*100;               // 半轮距 cm
+
+  return { beta, gamma, alpha, by };
+}
+
+// ═══════════════════════════════════════════════
+//  Build ratio rows UI
+// ═══════════════════════════════════════════════
+function buildScaleRows(){
+  const cont=document.getElementById('scale-rows');
+  cont.innerHTML='';
+  DEF_SCALES.forEach((s,i)=>{
+    const row=document.createElement('div');
+    row.className='scale-row';
+    row.innerHTML=`
+      <input type="checkbox" class="scale-cb" id="sc${i}" checked>
+      <div class="scale-swatch" style="background:${COLORS[i]}"></div>
+      <span class="scale-label">曲线 ${i+1}</span>
+      <input type="number" class="scale-input" id="sv${i}" value="${s}" min="0.3" max="3.0" step="0.02">
+      <span class="scale-l1" id="sl1_${i}">—</span>
     `;
-    btn.addEventListener('click', () => {
-      vis[i] = !vis[i];
-      btn.classList.toggle('active', vis[i]);
-      btn.classList.toggle('off',   !vis[i]);
-      redraw();
-    });
-    ctr.appendChild(btn);
+    cont.appendChild(row);
   });
 }
+buildScaleRows();
 
-// ============================================================
-//  参数显示
-// ============================================================
-function buildParams() {
-  const items = [
-    ['下横臂长度范围', '0.262 ~ 0.462 m'],
-    ['参考臂长 l₁(3-3)', '0.362 m'],
-    ['车轮跳动范围', '±100 mm'],
-    ['外倾角基准 α₀', '0°（Z=0 汇交）'],
-    ['主销内倾角基准 β₀', '14°'],
-    ['主销后倾角基准 γ₀', '3.5°'],
-    ['参考半轮距 Bᵧ₀', '73.0 cm'],
+// ═══════════════════════════════════════════════
+//  Read all inputs → geometry struct
+// ═══════════════════════════════════════════════
+function getGeom(){
+  const v=id=>parseFloat(document.getElementById(id).value)||0;
+  const ov=id=>{const el=document.getElementById(id);return(el&&el.dataset.auto==='0'&&el.value.trim()!=='')?parseFloat(el.value):null;};
+  const mm=1e-3;
+  const strut_upper =[v('su_x')*mm, v('su_y')*mm, v('su_z')*mm];
+  const strut_lower =[v('sl_x')*mm, v('sl_y')*mm, v('sl_z')*mm];
+  const arm_front   =[v('af_x')*mm, v('af_y')*mm, v('af_z')*mm];
+  const arm_rear    =[v('ar_x')*mm, v('ar_y')*mm, v('ar_z')*mm];
+  const arm_out     =[v('ao_x')*mm, v('ao_y')*mm, v('ao_z')*mm];
+  const wheel_center=[v('wc_x')*mm, v('wc_y')*mm, v('wc_z')*mm];
+
+  const P_su=strut_upper;
+  const s_dir0 =sub3(strut_lower, P_su);
+  const s_dir0u=norm3v(s_dir0);
+  const r_ball =sub3(arm_out,      strut_lower);
+  const r_wc   =sub3(wheel_center, strut_lower);
+  const lca_ax =norm3v(sub3(arm_rear, arm_front));
+  const wc_z0  =wheel_center[2];
+
+  const arm_mid=sc3(add3(arm_front,arm_rear), 0.5);
+  let r_perp=sub3(arm_out, arm_mid);
+  r_perp=sub3(r_perp, sc3(lca_ax, dot3(r_perp,lca_ax)));
+  const l1_base_raw=norm3(r_perp);
+  const mv_dir =sc3(r_perp, -1/l1_base_raw);
+
+  const kp0u=norm3v(sub3(P_su, arm_out));
+  const beta0_raw =Math.atan2(-kp0u[1], kp0u[2])*180/Math.PI;
+  const gamma0_raw=Math.atan2( kp0u[0], kp0u[2])*180/Math.PI;
+  const by0_raw   =Math.abs(wheel_center[1])*100;
+  const strut_len_raw=norm3(s_dir0)*1000;
+
+  // Apply overrides
+  const ov_l1    = ov('ov_l1');
+  const l1_base  = ov_l1 !== null ? ov_l1/1000 : l1_base_raw;
+
+  return {P_su,s_dir0,s_dir0u,r_ball,r_wc,lca_ax,wc_z0,arm_front,arm_out,
+          l1_base, l1_base_raw, mv_dir,
+          by0:by0_raw, beta0:beta0_raw, gamma0:gamma0_raw,
+          strut_len:strut_len_raw};
+}
+
+// ═══════════════════════════════════════════════
+//  Update derived display
+// ═══════════════════════════════════════════════
+function updateDerived(){
+  try{
+    const g=getGeom();
+    document.getElementById('d_l1').textContent    = (g.l1_base*1000).toFixed(1)+' mm';
+    document.getElementById('d_beta0').textContent = g.beta0.toFixed(2)+'°';
+    document.getElementById('d_gamma0').textContent= g.gamma0.toFixed(2)+'°';
+    document.getElementById('d_by0').textContent   = g.by0.toFixed(2)+' cm';
+    document.getElementById('d_strut').textContent = g.strut_len.toFixed(1)+' mm';
+    const kp0u=norm3v(sub3(g.P_su,g.arm_out));
+    const tilt=Math.acos(Math.max(-1,Math.min(1,kp0u[2])))*180/Math.PI;
+    document.getElementById('d_kplen').textContent = tilt.toFixed(2)+'°';
+    for(let i=0;i<5;i++){
+      const sc=parseFloat(document.getElementById('sv'+i).value)||1;
+      document.getElementById('sl1_'+i).textContent=(g.l1_base*sc*1000).toFixed(0)+' mm';
+    }
+    // Auto-fill override inputs that haven't been manually edited
+    const autoFill=(id,val,dec)=>{const el=document.getElementById(id);if(el&&el.dataset.auto==='1')el.value=val.toFixed(dec);};
+    autoFill('ov_l1',    g.l1_base*1000, 1);
+    autoFill('ov_beta0', g.beta0,        2);
+    autoFill('ov_gamma0',g.gamma0,       2);
+    autoFill('ov_by0',   g.by0,          2);
+    autoFill('ov_strut', g.strut_len,    1);
+  }catch(e){}
+}
+
+// Mark override inputs as user-edited; double-click to restore auto
+['ov_l1','ov_beta0','ov_gamma0','ov_by0','ov_strut'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.addEventListener('input',()=>{el.dataset.auto='0';el.classList.add('user-edited');});
+  el.addEventListener('dblclick',()=>{el.dataset.auto='1';el.classList.remove('user-edited');updateDerived();});
+});
+
+document.querySelectorAll('input:not(.override-input)').forEach(el=>el.addEventListener('input',updateDerived));
+updateDerived();
+
+// ═══════════════════════════════════════════════
+//  Main Simulation
+// ═══════════════════════════════════════════════
+let lastResult=null;
+
+function runSim(){
+  const btn=document.getElementById('btn-run');
+  const statusEl=document.getElementById('status');
+  btn.disabled=true;
+  statusEl.className='status-bar run';
+  statusEl.textContent='计算中... 请稍候';
+  const isMobile=window.innerWidth<=768;
+
+  setTimeout(()=>{
+    try{
+      const g=getGeom();
+      const zMin=parseFloat(document.getElementById('z_min').value)/1000||-.1;
+      const zMax=parseFloat(document.getElementById('z_max').value)/1000||.1;
+      const zPts=Math.max(51,Math.min(601,parseInt(document.getElementById('z_pts').value)||201));
+
+      // Active curves
+      const curves=[];
+      for(let i=0;i<5;i++){
+        if(document.getElementById('sc'+i).checked){
+          const sc=parseFloat(document.getElementById('sv'+i).value);
+          if(!isNaN(sc)&&sc>0) curves.push({scale:sc, color:COLORS[i], idx:i});
+        }
+      }
+      if(curves.length===0) throw new Error('请至少选择一条曲线');
+
+      const Z_arr=[];
+      for(let i=0;i<zPts;i++) Z_arr.push(zMin+i*(zMax-zMin)/(zPts-1));
+
+      const results=curves.map(curve=>{
+        const {scale,color,idx}=curve;
+        const l2n=scale*g.l1_base;
+        const move=sc3(g.mv_dir, (scale-1)*g.l1_base);
+        const af=add3(g.arm_front, move);
+        const r_lca=sub3(g.arm_out, af);
+        const cg={...g, af, r_lca};
+
+        const betaM=[], alphaM=[], gammaM=[], byM=[];
+        let xp=[0,0,0,0];   // continuation
+
+        Z_arr.forEach((dZ,zi)=>{
+          const F=x=>constraintEqs(x, cg, dZ);
+          let xs=solveNR4(F, xp);
+          // Check residual; retry with fresh guess if bad
+          if(Math.max(...F(xs).map(Math.abs))>1e-6){
+            const sp0=-dZ/Math.max(norm3(g.s_dir0u),0.01);
+            const th0=dZ/Math.max(g.l1_base,0.01);
+            const xs2=solveNR4(F,[0,0,sp0,th0]);
+            if(Math.max(...F(xs2).map(Math.abs))<Math.max(...F(xs).map(Math.abs))) xs=xs2;
+          }
+          const ang=extractAngles(xs, cg);
+          betaM.push(ang.beta); alphaM.push(ang.alpha); gammaM.push(ang.gamma); byM.push(ang.by);
+          xp=xs;
+        });
+
+        return {scale, color, idx, betaM, alphaM, gammaM, byM,
+                label:`曲线${idx+1} (×${scale.toFixed(2)})`};
+      });
+
+      lastResult={Z_arr, results, g};
+      if(isMobile){
+        switchTab('charts');
+        setTimeout(()=>{drawCharts(Z_arr,results);updateSummary(Z_arr,results);},80);
+      }else{
+        drawCharts(Z_arr,results);
+        updateSummary(Z_arr,results);
+      }
+      statusEl.className='status-bar ok';
+      statusEl.textContent=`✓ 计算完成 | ${curves.length} 条曲线 | ${zPts} 个计算点`;
+    }catch(e){
+      statusEl.className='status-bar err';
+      statusEl.textContent='✗ 错误: '+e.message;
+    }
+    btn.disabled=false;
+  },20);
+}
+
+// ═══════════════════════════════════════════════
+//  Chart Renderer
+// ═══════════════════════════════════════════════
+function drawCharts(Z_arr, results){
+  const Z_mm=Z_arr.map(z=>z*1000);
+  [
+    {id:'c-beta',  data:results.map(r=>r.betaM),  xlabel:'β / °'},
+    {id:'c-alpha', data:results.map(r=>r.alphaM), xlabel:'α / °'},
+    {id:'c-gamma', data:results.map(r=>r.gammaM), xlabel:'γ / °'},
+    {id:'c-by',    data:results.map(r=>r.byM),    xlabel:'Bₓ / cm'},
+  ].forEach(s=>drawOneChart(s.id, s.data, Z_mm, results.map(r=>r.color), s.xlabel));
+
+  document.getElementById('legend').innerHTML=results.map(r=>`
+    <div class="legend-item">
+      <div class="legend-line" style="background:${r.color}"></div>
+      <span class="legend-text">${r.label}</span>
+    </div>`).join('');
+}
+
+function drawOneChart(canvasId, dataseries, Z_mm, colors, xlabel){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas) return;
+  const rect=canvas.getBoundingClientRect();
+  const cssW=rect.width||canvas.offsetWidth; const cssH=rect.height||canvas.offsetHeight;
+  if(cssW<20||cssH<20) return;
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
+  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+  const W=cssW,H=cssH;
+  const mob=window.innerWidth<=768;
+  const PAD={top:18,right:30,bottom:mob?50:46,left:mob?60:56};
+  const plotW=W-PAD.left-PAD.right, plotH=H-PAD.top-PAD.bottom;
+  if(plotW<10||plotH<10) return;
+
+  ctx.fillStyle='#070b10'; ctx.fillRect(0,0,W,H);
+
+  let xmin=Infinity,xmax=-Infinity;
+  dataseries.forEach(ds=>ds.forEach(v=>{xmin=Math.min(xmin,v);xmax=Math.max(xmax,v);}));
+  const ymin=Math.min(...Z_mm), ymax=Math.max(...Z_mm);
+  const mg=Math.max((xmax-xmin)*.18,.15); xmin-=mg; xmax+=mg;
+
+  const tx=v=>PAD.left+(v-xmin)/(xmax-xmin)*plotW;
+  const ty=v=>PAD.top+(ymax-v)/(ymax-ymin)*plotH;
+
+  // Grid
+  ctx.strokeStyle='#1e2d3d'; ctx.lineWidth=1;
+  const xstep=niceStep((xmax-xmin)/5);
+  const xs0=Math.ceil(xmin/xstep)*xstep;
+  for(let x=xs0;x<=xmax+1e-9;x+=xstep){ctx.beginPath();ctx.moveTo(tx(x),PAD.top);ctx.lineTo(tx(x),PAD.top+plotH);ctx.stroke();}
+  const yRange=ymax-ymin;
+  const yStep=yRange<=60?10:20;
+  const yG0=Math.ceil(ymin/yStep)*yStep;
+  for(let y=yG0;y<=ymax+1e-9;y+=yStep){
+    if(y<ymin-1e-6||y>ymax+1e-6) continue;
+    ctx.beginPath();ctx.moveTo(PAD.left,ty(y));ctx.lineTo(PAD.left+plotW,ty(y));ctx.stroke();
+  }
+
+  // Zero lines
+  ctx.strokeStyle='#2a4060'; ctx.lineWidth=1; ctx.setLineDash([5,5]);
+  if(0>=xmin&&0<=xmax){ctx.beginPath();ctx.moveTo(tx(0),PAD.top);ctx.lineTo(tx(0),PAD.top+plotH);ctx.stroke();}
+  if(0>=ymin&&0<=ymax){ctx.beginPath();ctx.moveTo(PAD.left,ty(0));ctx.lineTo(PAD.left+plotW,ty(0));ctx.stroke();}
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle='#253345'; ctx.lineWidth=1;
+  ctx.strokeRect(PAD.left,PAD.top,plotW,plotH);
+
+  // Curves
+  dataseries.forEach((ds,ci)=>{
+    ctx.beginPath(); ctx.strokeStyle=colors[ci]; ctx.lineWidth=2.5;
+    ds.forEach((v,i)=>{const px=tx(v),py=ty(Z_mm[i]); i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});
+    ctx.stroke();
+    ctx.fillStyle=colors[ci]; ctx.font='bold 12px Courier New'; ctx.textAlign='center';
+    ctx.fillText(String(ci+1),tx(ds[ds.length-1]),PAD.top-4);
+    ctx.fillText(String(ci+1),tx(ds[0]),PAD.top+plotH+14);
+  });
+
+  // X axis
+  const fs=mob?13:12;
+  ctx.fillStyle='#8ab0cc'; ctx.font=`${fs}px Courier New`; ctx.textAlign='center';
+  for(let x=xs0;x<=xmax+1e-9;x+=xstep){
+    const px=tx(x);
+    ctx.beginPath();ctx.moveTo(px,PAD.top+plotH);ctx.lineTo(px,PAD.top+plotH+5);
+    ctx.strokeStyle='#3d5570';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillText(x.toFixed(decPl(xstep)),px,PAD.top+plotH+(mob?19:17));
+  }
+  ctx.font=`${mob?14:13}px Courier New`; ctx.fillStyle='#d8eaf8';
+  ctx.fillText(xlabel,PAD.left+plotW/2,H-(mob?5:4));
+
+  // Y axis
+  ctx.textAlign='right'; ctx.fillStyle='#8ab0cc'; ctx.font=`${fs}px Courier New`;
+  for(let y=yG0;y<=ymax+1e-9;y+=yStep){
+    if(y<ymin-1e-6||y>ymax+1e-6) continue;
+    const py=ty(y);
+    ctx.beginPath();ctx.moveTo(PAD.left,py);ctx.lineTo(PAD.left-5,py);
+    ctx.strokeStyle='#3d5570';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillText(String(Math.round(y)),PAD.left-7,py+4);
+  }
+  ctx.save(); ctx.translate(12,PAD.top+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.fillStyle='#8ab0cc'; ctx.font=`${mob?14:13}px Courier New`;
+  ctx.fillText('Z / mm',0,0); ctx.restore();
+}
+
+function niceStep(a){const e=Math.pow(10,Math.floor(Math.log10(a)));const f=a/e;return(f<1.5?1:f<3?2:f<7?5:10)*e;}
+function decPl(step){const s=step.toString(),d=s.indexOf('.');return d<0?0:s.length-d-1;}
+
+// ═══════════════════════════════════════════════
+//  Summary Table
+// ═══════════════════════════════════════════════
+function updateSummary(Z_arr, results){
+  const Z_mm=Z_arr.map(z=>z*1000);
+  const checkPts=[-100,-50,0,50,100];
+  const idxs=checkPts.map(zc=>{let b=0,bd=Infinity;Z_mm.forEach((z,i)=>{const d=Math.abs(z-zc);if(d<bd){bd=d;b=i;}});return b;});
+  const tbl=document.getElementById('summary-tbl');
+  let html=`<tr><th>曲线</th>${checkPts.map(z=>`<th>Z=${z>0?'+':''}${z}mm</th>`).join('')}</tr>`;
+  [{key:'betaM',name:'β主销内倾(°)'},{key:'alphaM',name:'α外倾(°)'},{key:'gammaM',name:'γ后倾(°)'},{key:'byM',name:'Bᵧ半轮距(cm)'}].forEach(({key,name})=>{
+    html+=`<tr><td colspan="${checkPts.length+1}" style="color:var(--amber);padding-top:6px;font-size:12px;">— ${name} —</td></tr>`;
+    results.forEach(r=>{
+      const ds=r[key];
+      html+=`<tr><td class="hi" style="color:${r.color}">${r.label}</td>${idxs.map(i=>`<td>${ds[i].toFixed(2)}</td>`).join('')}</tr>`;
+    });
+  });
+  tbl.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════
+//  Tab Switching
+// ═══════════════════════════════════════════════
+function switchTab(tab){
+  const p=document.getElementById('panel-params');
+  const c=document.getElementById('panel-charts');
+  const bp=document.getElementById('tab-params');
+  const bc=document.getElementById('tab-charts');
+  if(tab==='params'){p.classList.add('tab-active');c.classList.remove('tab-active');bp.classList.add('active');bc.classList.remove('active');}
+  else{c.classList.add('tab-active');p.classList.remove('tab-active');bc.classList.add('active');bp.classList.remove('active');
+    setTimeout(()=>{if(lastResult)try{drawCharts(lastResult.Z_arr,lastResult.results);}catch(e){}},60);
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  Export PNG — Word-compatible (white background)
+// ═══════════════════════════════════════════════
+function exportPNG(){
+  if(!lastResult){alert('请先点击"开始计算"生成图表。');return;}
+  const chartDefs=[
+    {id:'c-beta',  dsKey:'betaM',  xlabel:'β / °'},
+    {id:'c-alpha', dsKey:'alphaM', xlabel:'α / °'},
+    {id:'c-gamma', dsKey:'gammaM', xlabel:'γ / °'},
+    {id:'c-by',    dsKey:'byM',    xlabel:'Bₓ / cm'},
   ];
-  const row = document.getElementById('param-row');
-  items.forEach(([l,v]) => {
-    const d = document.createElement('div');
-    d.className = 'param';
-    d.innerHTML = `<span class="lbl">${l}</span><span class="val">${v}</span>`;
-    row.appendChild(d);
+  const Z_mm=lastResult.Z_arr.map(z=>z*1000);
+  const colors=lastResult.results.map(r=>r.color);
+  const exportCanvases=chartDefs.map(({id,dsKey,xlabel})=>{
+    const src=document.getElementById(id);
+    const ds=lastResult.results.map(r=>r[dsKey]);
+    return renderLightChart(src.width,src.height,ds,Z_mm,colors,xlabel);
   });
+  const totalW=exportCanvases.reduce((s,c)=>s+c.width,0);
+  const maxH=Math.max(...exportCanvases.map(c=>c.height));
+  const merged=document.createElement('canvas');
+  merged.width=totalW; merged.height=maxH;
+  const ctx=merged.getContext('2d');
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,totalW,maxH);
+  let x=0; exportCanvases.forEach(c=>{ctx.drawImage(c,x,0);x+=c.width;});
+  const a=document.createElement('a');
+  a.href=merged.toDataURL('image/png');
+  a.download='MacPherson_Kinematics_All.png'; a.click();
 }
 
-// ============================================================
-//  数据表
-// ============================================================
-function evalScore(dVal) {
-  if (dVal < 1.5) return '<span class="star">★★★</span> 优秀';
-  if (dVal < 3.0) return '<span class="star">★★</span> 良好';
-  if (dVal < 5.0) return '<span class="star">★</span> 一般';
-  return '偏大';
+// ═══════════════════════════════════════════════
+//  Download individual chart (Word-compatible)
+// ═══════════════════════════════════════════════
+function downloadChart(canvasId, name){
+  if(!lastResult){alert('请先点击"开始计算"生成图表。');return;}
+  const src=document.getElementById(canvasId);
+  if(!src||src.width<10){alert('请先点击"开始计算"生成图表。');return;}
+  const dsKeyMap={'c-beta':'betaM','c-alpha':'alphaM','c-gamma':'gammaM','c-by':'byM'};
+  const xlabelMap={'c-beta':'β / °','c-alpha':'α / °','c-gamma':'γ / °','c-by':'Bₓ / cm'};
+  const Z_mm=lastResult.Z_arr.map(z=>z*1000);
+  const colors=lastResult.results.map(r=>r.color);
+  const ds=lastResult.results.map(r=>r[dsKeyMap[canvasId]]);
+  const lightCanvas=renderLightChart(src.width,src.height,ds,Z_mm,colors,xlabelMap[canvasId]);
+  const a=document.createElement('a');
+  a.href=lightCanvas.toDataURL('image/png');
+  a.download='MP_'+name+'.png'; a.click();
 }
 
-function buildTable() {
-  const tbody = document.getElementById('tbl-body');
-  ARM_LENGTHS.forEach((l1, i) => {
-    const vals = allCurves[i].pts;
-    const rng = key => (Math.max(...vals.map(p=>p[key])) - Math.min(...vals.map(p=>p[key]))).toFixed(2);
-    const dBeta  = parseFloat(rng('beta'));
-    const dAlpha = parseFloat(rng('alpha'));
-    const dGamma = parseFloat(rng('gamma'));
-    const dBy    = parseFloat(rng('by'));
-    const score  = (dBeta + dAlpha) / 2;
-    const tr = document.createElement('tr');
-    if (i===2) tr.classList.add('hl');
-    tr.innerHTML = `
-      <td style="color:${COLORS[i]};font-weight:700">${ARM_LABELS[i]}</td>
-      <td>${l1.toFixed(3)}</td>
-      <td>${dBeta.toFixed(2)}</td>
-      <td>${dAlpha.toFixed(2)}</td>
-      <td>${dGamma.toFixed(2)}</td>
-      <td>${dBy.toFixed(2)}</td>
-      <td style="text-align:left">${evalScore(score)}</td>
-    `;
-    tbody.appendChild(tr);
+// ═══════════════════════════════════════════════
+//  Render chart with light/Word-friendly palette
+// ═══════════════════════════════════════════════
+function renderLightChart(W_px,H_px,dataseries,Z_mm,colors,xlabel){
+  const canvas=document.createElement('canvas');
+  canvas.width=W_px; canvas.height=H_px;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W_px,H_px);
+  const PAD={top:18,right:30,bottom:46,left:56};
+  const plotW=W_px-PAD.left-PAD.right, plotH=H_px-PAD.top-PAD.bottom;
+  if(plotW<10||plotH<10) return canvas;
+  let xmin=Infinity,xmax=-Infinity;
+  dataseries.forEach(ds=>ds.forEach(v=>{xmin=Math.min(xmin,v);xmax=Math.max(xmax,v);}));
+  const ymin=Math.min(...Z_mm), ymax=Math.max(...Z_mm);
+  const mg=Math.max((xmax-xmin)*.18,.15); xmin-=mg; xmax+=mg;
+  const tx=v=>PAD.left+(v-xmin)/(xmax-xmin)*plotW;
+  const ty=v=>PAD.top+(ymax-v)/(ymax-ymin)*plotH;
+  // Grid
+  ctx.strokeStyle='#cccccc'; ctx.lineWidth=1;
+  const xstep=niceStep((xmax-xmin)/5);
+  const xs0=Math.ceil(xmin/xstep)*xstep;
+  for(let x=xs0;x<=xmax+1e-9;x+=xstep){ctx.beginPath();ctx.moveTo(tx(x),PAD.top);ctx.lineTo(tx(x),PAD.top+plotH);ctx.stroke();}
+  const yRange=ymax-ymin, yStep=yRange<=60?10:20;
+  const yG0=Math.ceil(ymin/yStep)*yStep;
+  for(let y=yG0;y<=ymax+1e-9;y+=yStep){
+    if(y<ymin-1e-6||y>ymax+1e-6) continue;
+    ctx.beginPath();ctx.moveTo(PAD.left,ty(y));ctx.lineTo(PAD.left+plotW,ty(y));ctx.stroke();
+  }
+  ctx.strokeStyle='#aaaaaa'; ctx.lineWidth=1; ctx.setLineDash([5,5]);
+  if(0>=xmin&&0<=xmax){ctx.beginPath();ctx.moveTo(tx(0),PAD.top);ctx.lineTo(tx(0),PAD.top+plotH);ctx.stroke();}
+  if(0>=ymin&&0<=ymax){ctx.beginPath();ctx.moveTo(PAD.left,ty(0));ctx.lineTo(PAD.left+plotW,ty(0));ctx.stroke();}
+  ctx.setLineDash([]);
+  ctx.strokeStyle='#888888'; ctx.lineWidth=1.5;
+  ctx.strokeRect(PAD.left,PAD.top,plotW,plotH);
+  // Curves
+  dataseries.forEach((ds,ci)=>{
+    ctx.beginPath(); ctx.strokeStyle=colors[ci]; ctx.lineWidth=2.5;
+    ds.forEach((v,i)=>{const px=tx(v),py=ty(Z_mm[i]);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});
+    ctx.stroke();
+    ctx.fillStyle=colors[ci]; ctx.font='bold 12px Courier New'; ctx.textAlign='center';
+    ctx.fillText(String(ci+1),tx(ds[ds.length-1]),PAD.top-4);
+    ctx.fillText(String(ci+1),tx(ds[0]),PAD.top+plotH+14);
   });
+  // X ticks
+  ctx.fillStyle='#333333'; ctx.font='12px Courier New'; ctx.textAlign='center';
+  for(let x=xs0;x<=xmax+1e-9;x+=xstep){
+    const px=tx(x);
+    ctx.beginPath();ctx.moveTo(px,PAD.top+plotH);ctx.lineTo(px,PAD.top+plotH+5);
+    ctx.strokeStyle='#888888';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillText(x.toFixed(decPl(xstep)),px,PAD.top+plotH+17);
+  }
+  ctx.font='13px Courier New'; ctx.fillStyle='#111111';
+  ctx.fillText(xlabel,PAD.left+plotW/2,H_px-4);
+  // Y ticks
+  ctx.textAlign='right'; ctx.fillStyle='#333333'; ctx.font='12px Courier New';
+  for(let y=yG0;y<=ymax+1e-9;y+=yStep){
+    if(y<ymin-1e-6||y>ymax+1e-6) continue;
+    const py=ty(y);
+    ctx.beginPath();ctx.moveTo(PAD.left,py);ctx.lineTo(PAD.left-5,py);
+    ctx.strokeStyle='#888888';ctx.lineWidth=1;ctx.stroke();
+    ctx.fillText(String(Math.round(y)),PAD.left-7,py+4);
+  }
+  ctx.save(); ctx.translate(12,PAD.top+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.fillStyle='#333333'; ctx.font='13px Courier New';
+  ctx.fillText('Z / mm',0,0); ctx.restore();
+  return canvas;
 }
 
-// ============================================================
-//  按钮操作
-// ============================================================
-document.getElementById('btnAll').addEventListener('click', () => {
-  vis.fill(true);
-  document.querySelectorAll('.leg-btn').forEach(b => {
-    b.classList.add('active'); b.classList.remove('off');
+// ═══════════════════════════════════════════════
+//  Reset Defaults
+// ═══════════════════════════════════════════════
+function resetDefaults(){
+  const def={su_x:0,su_y:-600,su_z:800,sl_x:0,sl_y:-650,sl_z:450,
+    af_x:-200,af_y:-400,af_z:205,ar_x:200,ar_y:-390,ar_z:220,
+    ao_x:-30,ao_y:-700,ao_z:180,wc_x:0,wc_y:-800,wc_z:300,
+    z_min:-100,z_max:100,z_pts:201};
+  Object.entries(def).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val;});
+  DEF_SCALES.forEach((s,i)=>{document.getElementById('sc'+i).checked=true;document.getElementById('sv'+i).value=s;});
+  // Reset overrides to auto
+  ['ov_l1','ov_beta0','ov_gamma0','ov_by0','ov_strut'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.dataset.auto='1';el.classList.remove('user-edited');}
   });
-  redraw();
-});
-document.getElementById('btnRef').addEventListener('click', () => {
-  vis.fill(false); vis[2] = true;
-  document.querySelectorAll('.leg-btn').forEach((b,i) => {
-    b.classList.toggle('active', i===2);
-    b.classList.toggle('off',   i!==2);
-  });
-  redraw();
-});
-document.getElementById('btnReset').addEventListener('click', () => {
-  vis.fill(true);
-  document.querySelectorAll('.leg-btn').forEach(b => {
-    b.classList.add('active'); b.classList.remove('off');
-  });
-  redraw();
-});
+  updateDerived();
+  document.getElementById('status').className='status-bar';
+  document.getElementById('status').textContent='已恢复默认参数（图7-63硬点）。';
+}
 
-// ============================================================
-//  初始化
-// ============================================================
-buildParams();
-buildLegend();
-buildTable();
-redraw();
+// ═══════════════════════════════════════════════
+//  Resize Handler
+// ═══════════════════════════════════════════════
+let resizeT=null;
+function onResize(){
+  clearTimeout(resizeT);
+  resizeT=setTimeout(()=>{
+    if(lastResult)try{drawCharts(lastResult.Z_arr,lastResult.results);}catch(e){}
+  },120);
+}
+window.addEventListener('resize',onResize);
+if(typeof ResizeObserver!=='undefined'){
+  const ro=new ResizeObserver(()=>onResize());
+  ['c-beta','c-alpha','c-gamma','c-by'].forEach(id=>{const el=document.getElementById(id);if(el&&el.parentElement)ro.observe(el.parentElement);});
+}
+updateDerived();
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
 if (e.key === 'F12' || 
@@ -524,17 +958,6 @@ e.preventDefault();
 return false;
 }
 });
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-if (e.key === 'F12' || 
-(e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-(e.ctrlKey && e.key === 'U') ||
-(e.ctrlKey && e.key === 'S')) {
-e.preventDefault();
-return false;
-}
-});
-
 </script>
 <script>
   document.addEventListener('contextmenu', e => e.preventDefault());
@@ -548,6 +971,5 @@ return false;
     }
   });
 </script>
-
 </body>
 </html>
